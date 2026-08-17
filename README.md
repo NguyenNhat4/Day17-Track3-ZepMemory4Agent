@@ -54,7 +54,7 @@ docker compose run --rm app python -m src.compare_reports
 # Phut 110: copy data/golden_eval.json (giang vien phat), roi:
 docker compose run --rm app python -m src.evaluate --impl student --reuse-seeded --golden
 # Bonus UI:
-# GEMINI_API_KEY trong .env de chat; retrieval van chay khong can Gemini
+# OPENAI_API_KEY trong .env de chat; retrieval van chay khong can OpenAI
 # make ui   # http://localhost:8501
 ```
 
@@ -161,4 +161,3 @@ docker compose run --rm app python -m src.forget --user-id minh-lab17
 Co **11 evaluation cases** (E01-E11) phu 4 memory layer + 1 case mixed. Score chinh la **retrieval hit rate** tren ground truth (`must_contain_all` / `must_not_contain`). Benchmark danh gia memory retrieval truc tiep, khong de chat model che lap loi retrieval.
 
 Muc tieu: **>= 9/11 PASS (80%)** tren practice set. Tran nen **80**. Golden 20/20 **+10**. UI **+10**. Chi tiet: [`LAB.md` muc 5](LAB.md#5-kiem-tra-ket-qua).
-
