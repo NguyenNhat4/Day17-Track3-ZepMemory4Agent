@@ -1,5 +1,0 @@
-{
-  "dataset_id": "vinuni-lab17-golden-v1",
-  "note": "Schema only. Giang vien copy file that vao data/golden_eval.json 60 phut truoc khi het gio. File that nam trong .gitignore.",
-  "evaluations": []
-}

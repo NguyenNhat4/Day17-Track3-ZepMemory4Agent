@@ -84,7 +84,7 @@ def layer_badge(layer: str) -> str:
     return f'<span class="lab-badge" style="background:{color}">{layer}</span>'
 
 
-def retrieve_for_case(
+def retrieve_for_case(  
     memory: StudentMemory,
     case: dict[str, Any],
     extra_messages: list[dict[str, str]],
@@ -107,8 +107,56 @@ def retrieve_for_case(
       * Keep user_id and thread_id from the loaded case.
       * Finish with memory.assemble_context(layers).
     """
-    _ = (memory, case, extra_messages, settings, ShortTermMemory)
-    raise NotImplementedError("BONUS TODO: run student retrieval for the loaded case")
+    # Luôn tạo đủ 4 key để UI hiển thị thống nhất, kể cả layer không được chọn.
+    layers = {
+        "short_term": "",
+        "long_term": "",
+        "episodic": "",
+        "semantic": "",
+    }
+
+    dataset = load_dataset()
+    user_id = case["user_id"]
+    thread_id = case.get("thread_id", "")
+    query = case["query"]
+
+    # Short-term lấy fixture của case; nếu không có thì lấy messages của đúng
+    # user/thread trong dataset rồi nối thêm các lượt chat mới trên UI.
+    messages = case.get("fixture_messages")
+    if messages is None:
+        user = next(u for u in dataset["users"] if u["user_id"] == user_id)
+        session = next(
+            (s for s in user.get("sessions", []) if s["thread_id"] == thread_id),
+            None,
+        )
+        messages = (session or {}).get("messages", [])
+
+    short_term = ShortTermMemory(strategy="sliding", max_recent_messages=6, pressure_tokens=450)
+    for message in [*(messages or []), *extra_messages]:
+        short_term.add(message["role"], message["content"])
+
+    expected_layer = case.get("expected_layer")
+    wanted = case.get("retrieve_layers") if expected_layer == "mixed" else [expected_layer]
+    wanted = wanted or []
+
+    # Chỉ gọi các backend cần thiết cho case; tránh gọi Zep thừa và giữ đúng
+    # mục tiêu của từng evaluation layer.
+    if "short_term" in wanted:
+        layers["short_term"] = short_term.render()
+    if "long_term" in wanted:
+        layers["long_term"] = memory.retrieve_long_term(user_id, thread_id, query)
+    if "episodic" in wanted:
+        layers["episodic"] = memory.retrieve_episodic(user_id, query)
+    if "semantic" in wanted:
+        layers["semantic"] = memory.retrieve_semantic(settings.semantic_graph_id, query)
+
+    # Ghép các layer và áp dụng budget 10/4/3/3 trước khi hiển thị hoặc gửi cho LLM.
+    merged_context, budget = memory.assemble_context(layers)
+    return {
+        "merged_context": merged_context,
+        "layers": layers,
+        "budget": budget,
+    }
 
 
 def main() -> None:
